@@ -1,0 +1,46 @@
+# https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[package]
+name            = "appx"
+version         = "0.0.0-git"
+authors         = ["MaulingMonkey <git@maulingmonkey.com>"]
+edition         = "2018"
+repository      = "https://github.com/MaulingMonkey/appx"
+documentation   = "https://docs.rs/appx"
+license         = "Apache-2.0 OR MIT"
+readme          = "Readme.md"
+description     = "Managing appx packages"
+keywords        = ["appx"]
+categories      = ["api-bindings", "os::windows-apis"]
+exclude         = [".vscode"]
+
+[package.metadata.docs.rs]
+default-target  = "x86_64-pc-windows-msvc"
+targets         = ["x86_64-pc-windows-msvc", "i686-pc-windows-msvc"]
+
+[lib]
+path            = "src/_lib.rs"
+
+[dev-dependencies]
+wchar           = "0.6.1"
+
+[target.'cfg(windows)'.dependencies]
+wchar           = "0.6.1"
+
+[target.'cfg(windows)'.dependencies.winapi]
+version         = "0.3.9"
+features = [
+    # shared
+    "minwindef",
+    "ntdef",
+    "winerror",
+
+    # um
+    "combaseapi",
+    "handleapi",
+    "processthreadsapi",
+    "synchapi",
+    "winbase",
+    "winnt",
+    "winreg",
+]
