@@ -4,7 +4,7 @@
 [![crates.io](https://img.shields.io/crates/v/appx.svg)](https://crates.io/crates/appx)
 [![docs.rs](https://docs.rs/appx/badge.svg)](https://docs.rs/appx)
 [![License](https://img.shields.io/crates/l/appx.svg)](https://github.com/MaulingMonkey/appx)
-[![Build Status](https://img.shields.io/appveyor/build/MaulingMonkey/appx)](https://ci.appveyor.com/project/MaulingMonkey/appx)
+[![Build Status](https://github.com/MaulingMonkey/appx/workflows/Rust/badge.svg)](https://github.com/MaulingMonkey/appx/actions?query=workflow%3Arust)
 <!-- [![dependency status](https://deps.rs/repo/github/MaulingMonkey/appx/status.svg)](https://deps.rs/repo/github/MaulingMonkey/appx) -->
 
 Find, enumerate, and install [appx packages]
