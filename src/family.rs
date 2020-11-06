@@ -41,6 +41,8 @@ impl From<&Vec<u16>>    for PackageFamilyName { fn from(value: &Vec<u16>) -> Sel
 impl From< Vec<u16>>    for PackageFamilyName { fn from(value:  Vec<u16>) -> Self { Self(WString::from(value)) } }
 
 impl PackageFamilyName {
+    pub fn new(pfn: impl Into<Self>) -> Self { pfn.into() }
+
     /// Family `Name`
     ///
     /// ### Examples

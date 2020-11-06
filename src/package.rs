@@ -43,6 +43,8 @@ impl From<&Vec<u16>>    for PackageFullName { fn from(value: &Vec<u16>) -> Self 
 impl From< Vec<u16>>    for PackageFullName { fn from(value:  Vec<u16>) -> Self { Self(WString::from(value)) } }
 
 impl PackageFullName {
+    pub fn new(pfn: impl Into<Self>) -> Self { pfn.into() }
+
     /// Package `Name`
     ///
     /// ### Examples
