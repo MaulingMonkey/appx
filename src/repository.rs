@@ -33,18 +33,29 @@ pub fn families() -> io::Result<impl Iterator<Item = PackageFamilyName>> { imp::
 /// ```
 pub fn packages() -> io::Result<impl Iterator<Item = PackageFullName>> { imp::packages() }
 
+/// Get the [PackageFullName]s installed on this computer for a given [PackageFamilyName]
+///
+/// ### Examples
+///
+/// ```rust
+/// let fam = appx::PackageFamilyName::new("NcsiUwpApp_8wekyb3d8bbwe");
+/// for pkg in appx::repository::packages_for_family(&fam).unwrap() {
+///     println!("{}", pkg);
+/// }
+/// ```
+pub fn packages_for_family(family: &PackageFamilyName) -> io::Result<impl Iterator<Item = PackageFullName>> { imp::packages_for_family(family) }
+
+
 /// Check if the [PackageFamilyName] appears on this computer
-pub fn has_family(fam: impl Into<PackageFamilyName>) -> bool {
+pub fn has_family(fam: &PackageFamilyName) -> bool {
     if !cfg!(windows) { return false; }
-    let fam = fam.into();
     let key = reg::Key::hkcr(winstr0!(r"Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Families"), reg::Options::NONE, reg::SAM::READ_ONLY);
     key.ok().and_then(|key| key.subkey(fam.units0(), reg::Options::NONE, reg::SAM::READ_ONLY).ok()).is_some()
 }
 
 /// Check if the [PackageFullName] appears on this computer
-pub fn has_package(pfn: impl Into<PackageFullName>) -> bool {
+pub fn has_package(pfn: &PackageFullName) -> bool {
     if !cfg!(windows) { return false; }
-    let pfn = pfn.into();
     let key = reg::Key::hkcr(winstr0!(r"Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages"), reg::Options::NONE, reg::SAM::READ_ONLY);
     key.ok().and_then(|key| key.subkey(pfn.units0(), reg::Options::NONE, reg::SAM::READ_ONLY).ok()).is_some()
 }
@@ -74,6 +85,7 @@ pub fn add_appx_package(path: impl AsRef<Path>) -> io::Result<()> {
     use super::*;
     pub(super) fn families() -> io::Result<impl Iterator<Item = PackageFamilyName>> { Ok(None.into_iter()) }
     pub(super) fn packages() -> io::Result<impl Iterator<Item = PackageFullName  >> { Ok(None.into_iter()) }
+    pub(super) fn packages_for_family(_family: &PackageFamilyName) -> io::Result<impl Iterator<Item = PackageFullName>> { Ok(None.into_iter()) }
 }
 
 
@@ -106,6 +118,14 @@ pub fn add_appx_package(path: impl AsRef<Path>) -> io::Result<()> {
     pub(super) fn packages() -> io::Result<impl Iterator<Item = PackageFullName>> {
         Ok(PackagesIter {
             key: reg::Key::hkcr(winstr0!(r"Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages"), reg::Options::NONE, reg::SAM::READ_ONLY)?,
+            index: 0,
+        })
+    }
+
+    pub(super) fn packages_for_family(family: &PackageFamilyName) -> io::Result<impl Iterator<Item = PackageFullName>> {
+        Ok(PackagesIter {
+            key: reg::Key::hkcr(winstr0!(r"Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Families"), reg::Options::NONE, reg::SAM::READ_ONLY)?
+                .subkey(family.units0(), reg::Options::NONE, reg::SAM::READ_ONLY)?,
             index: 0,
         })
     }
