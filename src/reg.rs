@@ -35,8 +35,11 @@ impl Default for NameBuffer {
 #[cfg(not(windows))] type HKEY      = *mut std::ffi::c_void;
 #[cfg(not(windows))] type REGSAM    = u32;
 
+use std::convert::*;
+use std::ffi::OsString;
 use std::io;
 use std::ops::Drop;
+use std::path::PathBuf;
 use std::ptr::null_mut;
 
 
@@ -106,6 +109,32 @@ impl Key {
         self.enum_key_w_impl(index, name)
     }
 
+    pub(crate) fn get_value_dword(&self, sub_key: Option<&[u16]>, value: Option<&[u16]>) -> io::Result<u32> {
+        let mut r = [0u32];
+        self.get_value_w_impl(sub_key, value, win0!(RRF_RT_REG_DWORD), None, &mut r[..])?;
+        let [r] = r;
+        Ok(r)
+    }
+
+    pub(crate) fn get_value_qword(&self, sub_key: Option<&[u16]>, value: Option<&[u16]>) -> io::Result<u64> {
+        let mut r = [0u64];
+        self.get_value_w_impl(sub_key, value, win0!(RRF_RT_REG_QWORD), None, &mut r[..])?;
+        let [r] = r;
+        Ok(r)
+    }
+
+    pub(crate) fn get_value_string(&self, sub_key: Option<&[u16]>, value: Option<&[u16]>, buf: &mut [u16]) -> io::Result<String> {
+        self.get_value_w_impl(sub_key, value, win0!(RRF_RT_REG_SZ), None, buf).map(Self::trim_u16).map(String::from_utf16_lossy)
+    }
+
+    pub(crate) fn get_value_os_string(&self, sub_key: Option<&[u16]>, value: Option<&[u16]>, buf: &mut [u16]) -> io::Result<OsString> {
+        self.get_value_w_impl(sub_key, value, win0!(RRF_RT_REG_SZ), None, buf).map(Self::trim_u16).map(Self::os_string_from_wide)
+    }
+
+    pub(crate) fn get_value_pathbuf(&self, sub_key: Option<&[u16]>, value: Option<&[u16]>, buf: &mut [u16]) -> io::Result<PathBuf> {
+        self.get_value_os_string(sub_key, value, buf).map(PathBuf::from)
+    }
+
     /// HKEY_CLASSES_ROOT
     pub(crate) fn hkcr(sub_key: &[u16], options: Options, sam_desired: SAM) -> io::Result<Self> { unsafe { Self::open(win0!(HKEY_CLASSES_ROOT),    sub_key, options, sam_desired) } }
 
@@ -122,6 +151,10 @@ impl Key {
     pub(crate) fn hku (sub_key: &[u16], options: Options, sam_desired: SAM) -> io::Result<Self> { unsafe { Self::open(win0!(HKEY_USERS),           sub_key, options, sam_desired) } }
 }
 
+impl Key {
+    fn trim_u16(v: &[u16]) -> &[u16] { if v.last() != Some(&0) { v } else { &v[..v.len()-1] } }
+}
+
 #[cfg(not(windows))] impl Key {
     unsafe fn open_ex_w_impl(_hkey: HKEY, _sub_key: &[u16], _options: Options, _sam_desired: SAM) -> io::Result<Self> {
         Err(io::Error::new(io::ErrorKind::Other, "registry not implemented on this platform"))
@@ -129,6 +162,14 @@ impl Key {
 
     fn enum_key_w_impl<'s>(&self, _index: u32, _name: &'s mut NameBuffer) -> io::Result<Option<&'s [u16]>> {
         Err(io::Error::new(io::ErrorKind::Other, "registry not implemented on this platform"))
+    }
+
+    fn get_value_w_impl<'v, T>(&self, _sub_key: Option<&[u16]>, _value: Option<&[u16]>, _flags: u32, _ty: Option<&mut u32>, _data: &'v mut [T]) -> io::Result<&'v [T]> {
+        Err(io::Error::new(io::ErrorKind::Other, "registry not implemented on this platform"))
+    }
+
+    fn os_string_from_wide(buf: &[u16]) -> OsString {
+        OsString::from(String::from_utf16_lossy(buf))
     }
 }
 
@@ -151,6 +192,25 @@ impl Key {
             ERROR_NO_MORE_ITEMS => Ok(None),
             _                   => Err(io::Error::from_raw_os_error(status)),
         }
+    }
+
+    fn get_value_w_impl<'v, T>(&self, sub_key: Option<&[u16]>, value: Option<&[u16]>, flags: u32, ty: Option<&mut u32>, data: &'v mut [T]) -> io::Result<&'v [T]> {
+        let sub_key = sub_key.map_or(null_mut(), |sk| { assert!(sk.last() == Some(&0), "`sub_key` must be null terminated - use wchar::wch_c!(\"...\")!"); sk.as_ptr() as *mut _ });
+        let value   = value  .map_or(null_mut(), |v | { assert!(v .last() == Some(&0),   "`value` must be null terminated - use wchar::wch_c!(\"...\")!"); v .as_ptr() as *mut _ });
+        let ty      = ty     .map_or(null_mut(), |ty| ty);
+
+        let mut len = u32::try_from(std::mem::size_of_val(data)).map_err(|_| io::Error::new(io::ErrorKind::Other, "RegGetValueW cannot read that much data"))?;
+        let status = unsafe { RegGetValueW(self.0, sub_key, value, flags, ty, data.as_mut_ptr().cast(), &mut len) };
+        match status as u32 {
+            ERROR_SUCCESS   => Ok(&data[..((len as usize)/std::mem::size_of::<T>())]),
+            // XXX: Grow `data` on ERROR_MORE_DATA?
+            _               => Err(io::Error::from_raw_os_error(status))
+        }
+    }
+
+    fn os_string_from_wide(buf: &[u16]) -> OsString {
+        use std::os::windows::ffi::*;
+        OsString::from_wide(buf)
     }
 }
 
