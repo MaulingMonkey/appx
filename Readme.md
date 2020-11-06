@@ -16,6 +16,15 @@ Intended to be an unholy conglomeration of:
 
 
 
+<h2 name="todo">TODO</h2>
+
+* [winrt] support for app sandbox compatability / progress monitoring?
+* [makeappx] support?
+    * Commands: `pack`, `unpack`, `bundle`, `unbundle`, `encrypt`, `decrypt`, ...
+    * Binary location?
+    * Mapping file generation?
+    * [signtool] support?
+
 <h2 name="license">License</h2>
 
 Licensed under either of
@@ -39,3 +48,5 @@ dual licensed as above, without any additional terms or conditions.
 
 [appx packages]:        https://docs.microsoft.com/en-us/windows/msix/package/packaging-uwp-apps
 [winrt]:                https://docs.rs/winrt/
+[makeappx]:             https://docs.microsoft.com/en-us/windows/win32/appxpkg/make-appx-package--makeappx-exe-
+[signtool]:             https://docs.microsoft.com/en-us/windows/win32/seccrypto/signtool
