@@ -39,8 +39,10 @@ pub fn packages() -> io::Result<impl Iterator<Item = PackageFullName>> { imp::pa
 ///
 /// ```rust
 /// let fam = appx::PackageFamilyName::new("NcsiUwpApp_8wekyb3d8bbwe");
-/// for pkg in appx::repository::packages_for_family(&fam).unwrap() {
-///     println!("{}", pkg);
+/// if let Ok(packages) = appx::repository::packages_for_family(&fam) {
+///     for pkg in packages {
+///         println!("{}", pkg);
+///     }
 /// }
 /// ```
 pub fn packages_for_family(family: &PackageFamilyName) -> io::Result<impl Iterator<Item = PackageFullName>> { imp::packages_for_family(family) }
@@ -85,7 +87,7 @@ pub fn add_appx_package(path: impl AsRef<Path>) -> io::Result<()> {
     use super::*;
     pub(super) fn families() -> io::Result<impl Iterator<Item = PackageFamilyName>> { Ok(None.into_iter()) }
     pub(super) fn packages() -> io::Result<impl Iterator<Item = PackageFullName  >> { Ok(None.into_iter()) }
-    pub(super) fn packages_for_family(_family: &PackageFamilyName) -> io::Result<impl Iterator<Item = PackageFullName>> { Ok(None.into_iter()) }
+    pub(super) fn packages_for_family(_family: &PackageFamilyName) -> io::Result<std::vec::IntoIter<PackageFullName>> { Err(io::Error::from(io::ErrorKind::NotFound)) }
 }
 
 
